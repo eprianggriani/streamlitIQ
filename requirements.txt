@@ -3,4 +3,4 @@ pandas==2.2.3
 pip==24.2
 streamlit
 scikit-learn
-xhtml2pdf
+xlsxwriter
