@@ -1,20 +1,8 @@
 import streamlit as st
 import numpy as np
 import pickle
+import pandas as pd
 from io import BytesIO
-from xhtml2pdf import pisa
-
-# Fungsi untuk membuat PDF
-def generate_pdf(content):
-    pdf_buffer = BytesIO()
-    pisa_status = pisa.CreatePDF(
-        src=BytesIO(content.encode("utf-8")),
-        dest=pdf_buffer
-    )
-    pdf_buffer.seek(0)
-    if pisa_status.err:
-        raise ValueError("Gagal membuat PDF.")
-    return pdf_buffer
 
 # Mengubah layout menjadi lebih lebar
 st.set_page_config(page_title="Prediksi IQ & Outcome", layout="wide", page_icon="🧠")
@@ -75,27 +63,28 @@ if st.button("🔍 Hitung Hasil"):
         # Footer dengan gaya lebih halus
         st.markdown("---")
 
-        # Menampilkan hasil PDF dengan format desimal pada kolom tertentu
-        html_content = f"""
-        <h1>Prediksi Nilai IQ dan Outcome</h1>
-        <p><strong>Nama:</strong> {nama}</p>
-        <p><strong>Nilai IQ:</strong> {prediksi_iq}</p>
-        <h2>Hasil Diagnosis:</h2>
-        <p>{'Di bawah rata-rata' if prediction[0] == 1 else 'Rata-rata' if prediction[0] == 2 else 'Di atas rata-rata'}</p>
-        """
-        try:
-            # Generate the PDF file
-            pdf_file = generate_pdf(html_content)
+        # Menyiapkan data untuk file Excel
+        result_data = {
+            "Nama": [nama],
+            "Nilai IQ": [prediksi_iq],
+            "Kategori Outcome": ['Di bawah rata-rata' if prediction[0] == 1 else 'Rata-rata' if prediction[0] == 2 else 'Di atas rata-rata']
+        }
 
-            # Provide a button to download the PDF
-            st.download_button(
-                label="📄 Unduh PDF",
-                data=pdf_file,
-                file_name="Hasil_Prediksi_IQ.pdf",
-                mime="application/pdf"
-            )
-        except ValueError as e:
-            st.error(f"Gagal membuat PDF: {e}")
+        df = pd.DataFrame(result_data)
+
+        # Menyimpan dataframe sebagai file Excel di memori
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Hasil Prediksi")
+        excel_buffer.seek(0)
+
+        # Menampilkan tombol unduh Excel
+        st.download_button(
+            label="📄 Unduh Hasil sebagai Excel",
+            data=excel_buffer,
+            file_name="Hasil_Prediksi_IQ.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
     else:
         st.warning("Harap masukkan Nama dan Skor Mentah untuk melihat hasil prediksi.")
