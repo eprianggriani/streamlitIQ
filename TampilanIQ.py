@@ -17,7 +17,7 @@ st.sidebar.title("🔍 Tentang Aplikasi")
 st.sidebar.info("Aplikasi ini memprediksi Nilai IQ dan Outcome berdasarkan skor mentah yang diinputkan pengguna. Prediksi dibuat menggunakan model Machine Learning yang terdiri dari **RandomForestClassifier** dan **LinearRegression**.")
 
 # Judul Aplikasi
-st.markdown("<h1 style='text-align: center; color: blue;'>🧠 Aplikasi Prediksi Nilai IQ dan Outcome</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: blue;'>🧠 Prediksi Nilai IQ dan Outcome</h1>", unsafe_allow_html=True)
 
 # Input dari pengguna dengan section yang jelas
 st.markdown("<h3 style='text-align: center;'>Masukkan Nama dan Skor Mentah Anda di bawah ini:</h3>", unsafe_allow_html=True)
