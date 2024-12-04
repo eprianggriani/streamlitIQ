@@ -4,4 +4,4 @@ pip==24.2
 streamlit
 scikit-learn
 openpyxl
-mysql
+mysql==0.0.3
