@@ -7,36 +7,52 @@ import sqlite3
 # Mengubah layout 
 st.set_page_config(page_title="Prediksi IQ & Outcome", layout="wide", page_icon="🧠")
 
-# Load the train model dan scaler
-classifier = pickle.load(open('Klasifikasi.sav', 'rb'))
-regresi_nilai = pickle.load(open('NilaiIQ.sav', 'rb'))
-scaler = pickle.load(open('scaler.sav', 'rb'))
+# Load the train model dan scaler (hanya dilakukan sekali saat aplikasi dimulai)
+@st.cache_resource
+def load_models():
+    classifier = pickle.load(open('Klasifikasi.sav', 'rb'))
+    regresi_nilai = pickle.load(open('NilaiIQ.sav', 'rb'))
+    scaler = pickle.load(open('scaler.sav', 'rb'))
+    return classifier, regresi_nilai, scaler
+
+classifier, regresi_nilai, scaler = load_models()
 
 # Sidebar untuk informasi tambahan
 st.sidebar.title("🔍 Tentang Aplikasi")
 st.sidebar.info("Aplikasi ini memprediksi Nilai IQ dan Outcome berdasarkan skor mentah yang diinputkan pengguna. Prediksi dibuat menggunakan model Machine Learning yang terdiri dari **RandomForestClassifier** dan **LinearRegression**.")
 
-# Buat koneksi ke SQLite
-conn = sqlite3.connect('data_prediksi_iq.db')
-c = conn.cursor()
+# Fungsi untuk membuat dan membuka koneksi ke SQLite
+def get_database_connection():
+    conn = sqlite3.connect('data_prediksi_iq.db')
+    return conn
 
-# Buat tabel jika belum ada
-c.execute('''
-CREATE TABLE IF NOT EXISTS prediksi_iq (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nama TEXT,
-    nilai_iq INTEGER,
-    kategori TEXT
-)
-''')
+# Buat tabel jika belum ada (hanya dieksekusi satu kali)
+def create_table():
+    conn = get_database_connection()
+    c = conn.cursor()
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS prediksi_iq (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nama TEXT,
+        nilai_iq INTEGER,
+        kategori TEXT
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+create_table()
 
 # Sidebar untuk riwayat dan hapus data
 st.sidebar.markdown("---")  # Pembatas
 st.sidebar.markdown("## 📑 Riwayat Data")
 with st.sidebar.expander("Lihat Riwayat Prediksi IQ"):
+    conn = get_database_connection()
+    c = conn.cursor()
     # Ambil semua data dari database dan tampilkan dalam tabel
     c.execute('SELECT * FROM prediksi_iq')
     data = c.fetchall()
+    conn.close()
 
     # Jika ada data, tampilkan dalam dataframe
     if data:
@@ -56,9 +72,12 @@ with st.sidebar.expander("Lihat Riwayat Prediksi IQ"):
 
 # Tombol hapus riwayat di sidebar
 if st.sidebar.button("🗑️ Hapus Riwayat Data"):
+    conn = get_database_connection()
+    c = conn.cursor()
     # Menghapus semua data dalam tabel
     c.execute('DELETE FROM prediksi_iq')
     conn.commit()
+    conn.close()
     st.sidebar.success("Riwayat data telah dihapus.")
 
 # Judul Aplikasi
@@ -109,22 +128,20 @@ if st.button("🔍 Hitung Hasil"):
             st.success(f"Kategori Anda: **{kategori}**")
 
         # Menyimpan data ke SQLite
+        conn = get_database_connection()
+        c = conn.cursor()
         c.execute('''
             INSERT INTO prediksi_iq (nama, nilai_iq, kategori) 
             VALUES (?, ?, ?)
         ''', (nama, prediksi_iq, kategori))
-
-        # Commit dan simpan ke database
         conn.commit()
+        conn.close()
 
         # Divider sebelum unduhan
         st.markdown("---")
 
     else:
         st.warning("Harap masukkan Nama dan Skor Mentah untuk melihat hasil prediksi.")
-
-# Tutup koneksi ke SQLite
-conn.close()
 
 # Tampilan tambahan di bawah
 st.markdown("<p style='text-align: center;'>Ingin mengulang prediksi? Masukkan skor baru dan klik tombol di atas!</p>", unsafe_allow_html=True)
