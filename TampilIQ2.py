@@ -24,6 +24,8 @@ if "kategori" not in st.session_state:
     st.session_state["kategori"] = None
 if "nama" not in st.session_state:
     st.session_state["nama"] = ""
+if "input_data" not in st.session_state:
+    st.session_state["input_data"] = None
 
 # Judul Aplikasi
 st.markdown("<h1 style='text-align: center; color: blue;'>🧠 Aplikasi Prediksi Nilai IQ dan Outcome</h1>", unsafe_allow_html=True)
@@ -32,16 +34,17 @@ st.markdown("<h1 style='text-align: center; color: blue;'>🧠 Aplikasi Prediksi
 st.markdown("<h3 style='text-align: center;'>Masukkan Nama dan Skor Mentah Anda di bawah ini:</h3>", unsafe_allow_html=True)
 
 # Input nama pengguna
-nama = st.text_input("👤 Nama Anda:", value=st.session_state["nama"])
+nama_input = st.text_input("👤 Nama Anda:", value=st.session_state.get("nama", ""))
 
-# Input data pengguna
-input_data = st.number_input("⚖️ Skor Mentah (X):", min_value=0, max_value=100, step=1)
+# Input data pengguna tanpa tombol silang
+input_data = st.number_input("⚖️ Skor Mentah (X):", min_value=0, max_value=100, step=1, value=st.session_state.get("input_data", None), key="skor_input")
 
 # Button untuk menghitung hasil
 if st.button("🔍 Hitung Hasil"):
-    if nama and input_data:
+    if nama_input and input_data:
         # Simpan nama ke session state
-        st.session_state["nama"] = nama
+        st.session_state["nama"] = nama_input
+        st.session_state["input_data"] = input_data
 
         # Proses input data
         input_data_as_numpy_array = np.array(input_data).reshape(1, -1)
@@ -66,14 +69,10 @@ if st.button("🔍 Hitung Hasil"):
 
         # Simpan data ke session state
         st.session_state["riwayat"].append({
-            "Nama": nama,
+            "Nama": nama_input,
             "Nilai IQ": prediksi_iq,
             "Kategori": kategori
         })
-
-        st.success("Prediksi berhasil dihitung!")
-    else:
-        st.warning("Harap masukkan Nama dan Skor Mentah untuk melihat hasil prediksi.")
 
 # Tampilkan hasil prediksi jika ada di session state
 if st.session_state["prediksi"] is not None and st.session_state["kategori"] is not None:
@@ -87,6 +86,15 @@ if st.session_state["prediksi"] is not None and st.session_state["kategori"] is 
         st.info(f"Kategori Anda: **{st.session_state['kategori']}**")
     else:
         st.success(f"Kategori Anda: **{st.session_state['kategori']}**")
+
+    # Tombol Clear untuk menghapus semua inputan (kecuali riwayat)
+    clear_button = st.button("🧹 Clear Inputan")
+    if clear_button:
+        # Reset session state for inputs and predictions, but not the history
+        st.session_state["nama"] = ""
+        st.session_state["input_data"] = None
+        st.session_state["prediksi"] = None
+        st.session_state["kategori"] = None
 
 # Sidebar untuk riwayat dan hapus data
 st.sidebar.markdown("---")
@@ -110,4 +118,3 @@ with st.sidebar.expander("Lihat Riwayat Prediksi IQ"):
 # Tombol hapus riwayat di sidebar
 if st.sidebar.button("🗑️ Hapus Riwayat Data"):
     st.session_state["riwayat"] = []
-    st.success("Riwayat berhasil dihapus.")
