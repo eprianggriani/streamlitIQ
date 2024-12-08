@@ -2,7 +2,6 @@ import streamlit as st
 import numpy as np
 import pickle
 import pandas as pd
-import sqlite3
 
 # Mengubah layout 
 st.set_page_config(page_title="Prediksi IQ & Outcome", layout="wide", page_icon="🧠")
@@ -16,52 +15,9 @@ scaler = pickle.load(open('scaler.sav', 'rb'))
 st.sidebar.title("🔍 Tentang Aplikasi")
 st.sidebar.info("Aplikasi ini memprediksi Nilai IQ dan Outcome berdasarkan skor mentah yang diinputkan pengguna. Prediksi dibuat menggunakan model Machine Learning yang terdiri dari **RandomForestClassifier** dan **LinearRegression**.")
 
-# Buat koneksi ke SQLite
-conn = sqlite3.connect('data_prediksi_iq.db')
-c = conn.cursor()
-
-# Buat tabel jika belum ada
-c.execute('''
-CREATE TABLE IF NOT EXISTS prediksi_iq (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nama TEXT,
-    nilai_iq INTEGER,
-    kategori TEXT
-)
-''')
-
-# Sidebar untuk riwayat dan hapus data
-st.sidebar.markdown("---")  # Pembatas
-st.sidebar.markdown("## 📑 Riwayat Data")
-with st.sidebar.expander("Lihat Riwayat Prediksi IQ"):
-    # Ambil semua data dari database dan tampilkan dalam tabel
-    c.execute('SELECT * FROM prediksi_iq')
-    data = c.fetchall()
-
-    # Jika ada data, tampilkan dalam dataframe
-    if data:
-        df = pd.DataFrame(data, columns=["ID", "Nama", "Nilai IQ", "Kategori"])
-        st.dataframe(df)
-
-        # Download tombol untuk database sebagai CSV
-        csv = df.to_csv(index=False)
-        st.download_button(
-            label="📄 Unduh Hasil sebagai CSV",
-            data=csv,
-            file_name="Hasil_Prediksi_IQ.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("Belum ada riwayat prediksi yang tersimpan.")
-
-# Tombol hapus riwayat di sidebar
-if st.sidebar.button("🗑️ Hapus Riwayat Data"):
-    # Menghapus semua data dalam tabel
-    c.execute('DELETE FROM prediksi_iq')
-    conn.commit()
-    st.rerun()  # Jalankan ulang aplikasi untuk menampilkan pembaruan
-
-# Inisialisasi Session State
+# Inisialisasi Session State untuk riwayat
+if "riwayat" not in st.session_state:
+    st.session_state["riwayat"] = []
 if "prediksi" not in st.session_state:
     st.session_state["prediksi"] = None
 if "kategori" not in st.session_state:
@@ -108,13 +64,14 @@ if st.button("🔍 Hitung Hasil"):
             kategori = "Di atas rata-rata"
         st.session_state["kategori"] = kategori
 
-        # Menyimpan data ke SQLite
-        c.execute('''
-            INSERT INTO prediksi_iq (nama, nilai_iq, kategori) 
-            VALUES (?, ?, ?)
-        ''', (nama, prediksi_iq, kategori))
-        conn.commit()
-        st.rerun()  # Refresh untuk memperbarui tabel dan UI
+        # Simpan data ke session state
+        st.session_state["riwayat"].append({
+            "Nama": nama,
+            "Nilai IQ": prediksi_iq,
+            "Kategori": kategori
+        })
+
+        st.success("Prediksi berhasil dihitung!")
     else:
         st.warning("Harap masukkan Nama dan Skor Mentah untuk melihat hasil prediksi.")
 
@@ -122,7 +79,7 @@ if st.button("🔍 Hitung Hasil"):
 if st.session_state["prediksi"] is not None and st.session_state["kategori"] is not None:
     st.markdown("---")
     st.markdown("<h2 style='text-align: center; color: green;'>📊 Hasil Prediksi</h2>", unsafe_allow_html=True)
-    st.success(f"**Hay {st.session_state['nama']}**")
+    st.success(f"**Hai {st.session_state['nama']}**")
     st.success(f"**Nilai IQ Anda: {st.session_state['prediksi']}**")
     if st.session_state["kategori"] == "Di bawah rata-rata":
         st.warning(f"Kategori Anda: **{st.session_state['kategori']}**")
@@ -131,8 +88,26 @@ if st.session_state["prediksi"] is not None and st.session_state["kategori"] is 
     else:
         st.success(f"Kategori Anda: **{st.session_state['kategori']}**")
 
-# Tutup koneksi ke SQLite
-conn.close()
+# Sidebar untuk riwayat dan hapus data
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 📑 Riwayat Data")
+with st.sidebar.expander("Lihat Riwayat Prediksi IQ"):
+    if st.session_state["riwayat"]:
+        df = pd.DataFrame(st.session_state["riwayat"])
+        st.dataframe(df)
 
-# Tampilan tambahan di bawah
-st.markdown("<p style='text-align: center;'>Ingin mengulang prediksi? Masukkan skor baru dan klik tombol di atas!</p>", unsafe_allow_html=True)
+        # Unduh sebagai CSV
+        csv = df.to_csv(index=False)
+        st.download_button(
+            label="📄 Unduh Hasil sebagai CSV",
+            data=csv,
+            file_name="Hasil_Prediksi_IQ.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("Belum ada riwayat prediksi yang tersimpan.")
+
+# Tombol hapus riwayat di sidebar
+if st.sidebar.button("🗑️ Hapus Riwayat Data"):
+    st.session_state["riwayat"] = []
+    st.success("Riwayat berhasil dihapus.")
