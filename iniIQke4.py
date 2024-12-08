@@ -33,7 +33,6 @@ def connect_to_db():
         host="localhost",  # Ganti dengan host MySQL kamu
         user="root",  # Ganti dengan username MySQL kamu
         database="prediksi_iq",  # Ganti dengan nama database MySQL kamu
-        port=3307
     )
     return conn
 
