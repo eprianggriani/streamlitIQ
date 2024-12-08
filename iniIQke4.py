@@ -30,7 +30,7 @@ if "nama" not in st.session_state:
 # Fungsi untuk menghubungkan ke database MySQL
 def connect_to_db():
     conn = mysql.connector.connect(
-        host="localhost",  # Ganti dengan host MySQL kamu
+        host="127.0.0.1",  # Ganti dengan host MySQL kamu
         user="root",  # Ganti dengan username MySQL kamu
         password="",
         database="prediksi_iq"  # Ganti dengan nama database MySQL kamu
